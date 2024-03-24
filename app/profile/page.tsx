@@ -22,6 +22,7 @@ import {
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { set } from "date-fns";
+import Image from "next/image";
 
 const formSchema = z.object({
     address: z.string(),
@@ -36,6 +37,7 @@ const formSchema = z.object({
 export default function Index() {
     // const [defaultFormValues, setDefaultFormValues] = useState({});
     const [userId, setUserId] = useState<string>("");
+    const [signImage, setSignImage] = useState<string>("");
 
     const router = useRouter();
 
@@ -63,6 +65,8 @@ export default function Index() {
                 return router.push("/login");
             }
 
+            console.log(user);
+
             setUserId(user.id);
         }
 
@@ -81,6 +85,8 @@ export default function Index() {
                 iban: data[0]?.iban,
                 bic: data[0]?.bic,
             });
+
+            setSignImage(data[0]?.signature);
         }
         getUser();
         fetchProfile();
@@ -237,7 +243,7 @@ export default function Index() {
                                     type="file"
                                     {...field}
                                     onChange={(event) => {
-                                        onChange(event.target.files[0]);
+                                        onChange(event.target.files![0]);
                                     }}
                                 />
                             </FormControl>
@@ -245,6 +251,15 @@ export default function Index() {
                         </FormItem>
                     )}
                 />
+                {signImage && (
+                    <Image
+                        src={signImage}
+                        alt="Signature"
+                        width={400}
+                        height={100}
+                        style={{ objectFit: "contain" }}
+                    />
+                )}
 
                 <Button type="submit">Submit</Button>
             </form>
