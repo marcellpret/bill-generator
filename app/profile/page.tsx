@@ -20,6 +20,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { set } from "date-fns";
 
 const formSchema = z.object({
@@ -29,10 +30,14 @@ const formSchema = z.object({
     bankName: z.string(),
     iban: z.string(),
     bic: z.string(),
+    signature: z.any(),
 });
 
 export default function Index() {
     // const [defaultFormValues, setDefaultFormValues] = useState({});
+    const [userId, setUserId] = useState<string>("");
+
+    const router = useRouter();
 
     const supabase = createClient();
 
@@ -49,6 +54,18 @@ export default function Index() {
     });
 
     useEffect(() => {
+        async function getUser() {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) {
+                return router.push("/login");
+            }
+
+            setUserId(user.id);
+        }
+
         async function fetchProfile() {
             const { data, error } = await supabase.from("profiles").select();
             if (error) {
@@ -65,14 +82,17 @@ export default function Index() {
                 bic: data[0]?.bic,
             });
         }
-
+        getUser();
         fetchProfile();
     }, []);
 
     // 2. Define a submit handler.
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        const { address, taxNumber, taxId, bankName, iban, bic } = values;
+        values.signature = await onUpload(userId);
+        const { address, taxNumber, taxId, bankName, iban, bic, signature } =
+            values;
         try {
+            console.log(values);
             const { data, error } = await supabase
                 .from("profiles")
                 .upsert(
@@ -83,6 +103,7 @@ export default function Index() {
                         bank_name: bankName,
                         iban,
                         bic,
+                        signature,
                     },
                     { onConflict: "user_id" }
                 )
@@ -94,9 +115,33 @@ export default function Index() {
             }
 
             console.log("Data inserted: ", data);
-            // console.log(values);
         } catch (error) {
             console.error(error);
+        }
+    }
+
+    async function onUpload(userId: string) {
+        const image = form.getValues("signature");
+
+        if (!image) {
+            return;
+        }
+
+        const saveImage = await supabase.storage
+            .from("bill-bucket")
+            .upload(`${userId}/${image.name}`, image);
+        if (saveImage.error) {
+            console.error("Error uploading signature: ", saveImage.error);
+            return;
+        }
+
+        const url = await supabase.storage
+            .from("bill-bucket")
+            .createSignedUrl(`${userId}/${image.name}`, 3600);
+
+        if (url.data) {
+            console.log(url.data.signedUrl);
+            return url.data.signedUrl;
         }
     }
 
@@ -176,6 +221,25 @@ export default function Index() {
                             <FormLabel>BIC</FormLabel>
                             <FormControl>
                                 <Input placeholder="BIC" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="signature"
+                    render={({ field: { value, onChange, ...field } }) => (
+                        <FormItem className="flex-1">
+                            <FormLabel>Upload your signature</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="file"
+                                    {...field}
+                                    onChange={(event) => {
+                                        onChange(event.target.files[0]);
+                                    }}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
