@@ -55,8 +55,8 @@ export default function CreateEntry({ addEntry }) {
                 </CardDescription>
             </CardHeader>
 
-            <CardContent className="flex gap-2">
-                <div className="grid w-full max-w-sm items-center gap-2">
+            <CardContent className="flex w-full gap-2">
+                <div className="grid w-full items-center gap-2">
                     <Label htmlFor="entry">Entry</Label>
                     <Input
                         ref={refEntry}

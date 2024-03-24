@@ -3,7 +3,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { createClient } from "@/utils/supabase/client";
+
+import useLocalStorageState from "use-local-storage-state";
+
 type Entry = [string, string] | [];
+
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,16 +31,6 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableFooter,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "./ui/table";
 
 import {
     Popover,
@@ -42,14 +38,16 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import CreateEntry from "./CreateEntry";
 
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
+import EntriesTable from "./EntriesTable";
+import MyDocument from "./pdf/test";
+import { data } from "autoprefixer";
 
 const formSchema = z.object({
     bill: z.string().min(2, {
@@ -65,13 +63,17 @@ const formSchema = z.object({
     clientAddress: z.string(),
     extraInfo: z.string().optional(),
     entries: z.array(z.array(z.string(), z.string())),
-    taxPercentage: z.enum(["0.07", "0.19"]),
+    taxPercentage: z.enum(["0.07", "0.19", "0"]),
 });
 
 export default function CreateBill() {
+    // const [formLocal, setFormLocal] = useLocalStorageState("form", {
+    //     defaultValue: {},
+    // });
+
     const [entries, setEntries] = useState<Entry[]>([]);
 
-    const [taxPercentage, setTaxPercentage] = useState("0.19");
+    const supabase = createClient();
 
     const total = entries.reduce((acc, entry) => {
         return acc + parseFloat(entry[1]!);
@@ -94,29 +96,64 @@ export default function CreateBill() {
             clientName: "",
             clientAddress: "",
             extraInfo: "",
-            taxPercentage: "0.19",
+            taxPercentage: "0",
         },
     });
 
-    function handleChange(value) {
-        setTaxPercentage(value);
-    }
+    const taxPercentage = parseFloat(form.watch("taxPercentage"));
+
+    // useEffect(() => {
+    //     if (Object.keys(formLocal).length === 0) return;
+    //     form.reset(formLocal);
+    // }, [formLocal]);
+
+    // form.watch((data) => {
+    //     setFormLocal(data);
+    // });
 
     // 2. Define a submit handler.
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: z.infer<typeof formSchema>) {
         // Do something with the form values.
         // ✅ This will be type-safe and validated.
 
+        console.log("Test");
+
         values.entries = entries;
+        try {
+            const { data, error } = await supabase
+                .from("bills")
+                .insert({
+                    bill: values.bill,
+                    bill_number: values.billNumber,
+                    issue_date: new Date(values.issueDate),
+                    client_name: values.clientName,
+                    client_address: values.clientAddress,
+                    extra_info: values.extraInfo,
+                    tax_percentage: values.taxPercentage,
+                    entries: values.entries,
+                })
+                .select();
 
-        console.log(values);
+            if (error) {
+                console.error("Error inserting bill: ", error);
+                return;
+            }
+
+            setEntries([]);
+            form.reset();
+            toast.success("Bill created successfully", {
+                position: "bottom-center",
+            });
+        } catch (error) {
+            console.log(error);
+        }
     }
-
-    // console.log(taxPercentage);
-
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+            <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-10 pr-4"
+            >
                 <div className="flex gap-2">
                     <FormField
                         control={form.control}
@@ -136,48 +173,39 @@ export default function CreateBill() {
                     />
 
                     <div className="space-y-2">
-                        <Label htmlFor="taxPercentage">Tax</Label>
-                        <Select
+                        <FormField
+                            control={form.control}
                             name="taxPercentage"
-                            onValueChange={handleChange}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Tax" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="0.07">7%</SelectItem>
-                                <SelectItem value="0.19">19%</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="taxPercentage">
+                                        Tax
+                                    </FormLabel>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Tax" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="0">
+                                                0%
+                                            </SelectItem>
+                                            <SelectItem value="0.07">
+                                                7%
+                                            </SelectItem>
+                                            <SelectItem value="0.19">
+                                                19%
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
                     </div>
-
-                    {/* <FormField
-                        control={form.control}
-                        name="taxPercentage"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Tax Percentage</FormLabel>
-                                <Select
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                >
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Tax" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="0.07">7%</SelectItem>
-                                        <SelectItem value="0.19">
-                                            19%
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    /> */}
                 </div>
 
                 <FormField
@@ -204,7 +232,7 @@ export default function CreateBill() {
                             <FormLabel>Client Address*</FormLabel>
                             <FormControl>
                                 <Input
-                                    placeholder="CLient address"
+                                    placeholder="Client address"
                                     {...field}
                                 />
                             </FormControl>
@@ -244,7 +272,7 @@ export default function CreateBill() {
                                             <Button
                                                 variant={"outline"}
                                                 className={cn(
-                                                    "w-[240px] pl-3 text-left font-normal",
+                                                    "w-full pl-3 text-left font-normal",
                                                     !field.value &&
                                                         "text-muted-foreground"
                                                 )}
@@ -297,66 +325,14 @@ export default function CreateBill() {
 
                 <CreateEntry addEntry={addEntry} />
                 {entries.length !== 0 && (
-                    <div className="">
-                        <Table>
-                            <TableCaption>
-                                The list of items to add to the invoice
-                            </TableCaption>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-full">
-                                        Entry
-                                    </TableHead>
-                                    <TableHead className="text-right">
-                                        Value
-                                    </TableHead>
-                                    <TableHead></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {entries.map((entry) => (
-                                    <TableRow key={entry[0]}>
-                                        <TableCell>{entry[0]}</TableCell>
-                                        <TableCell className="text-right">
-                                            {entry[1]}$
-                                        </TableCell>
-                                        <TableCell
-                                            className=" cursor-pointer"
-                                            onClick={() =>
-                                                deleteEntry(entry[0])
-                                            }
-                                        >
-                                            <X className=" hover:text-red-600 hover:scale-110" />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-
-                                <TableRow>
-                                    <TableCell>
-                                        {Math.floor(taxPercentage * 100)}% tax
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {(total * taxPercentage).toFixed(2)}$
-                                    </TableCell>
-                                    <TableCell></TableCell>
-                                </TableRow>
-                            </TableBody>
-                            <TableFooter>
-                                <TableRow>
-                                    <TableCell>Total</TableCell>
-                                    <TableCell className="text-right">
-                                        {(
-                                            total +
-                                            total * taxPercentage
-                                        ).toFixed(2)}
-                                        $
-                                    </TableCell>
-                                    <TableCell></TableCell>
-                                </TableRow>
-                            </TableFooter>
-                        </Table>
-                    </div>
+                    <EntriesTable
+                        entries={entries}
+                        taxPercentage={taxPercentage}
+                        total={total}
+                        deleteEntry={deleteEntry}
+                    />
                 )}
+
                 <Button type="submit">Submit</Button>
             </form>
         </Form>

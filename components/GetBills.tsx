@@ -6,10 +6,10 @@ export default async function GetBills() {
     const { data: bills } = await supabase.from("bills").select();
 
     return (
-        <ul>
+        <ol className="space-y-2">
             {bills!.map((bill) => (
                 <Bill bill={bill} key={bill.serial} />
             ))}
-        </ul>
+        </ol>
     );
 }

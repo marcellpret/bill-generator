@@ -3,18 +3,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { createClient } from "@/utils/supabase/client";
+
 type Entry = [string, string] | [];
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 import {
     Form,
@@ -25,20 +19,8 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-
-import { useState } from "react";
-import { CalendarIcon, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { use, useEffect, useState } from "react";
+import { set } from "date-fns";
 
 const formSchema = z.object({
     address: z.string(),
@@ -50,6 +32,10 @@ const formSchema = z.object({
 });
 
 export default function Index() {
+    // const [defaultFormValues, setDefaultFormValues] = useState({});
+
+    const supabase = createClient();
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -62,12 +48,56 @@ export default function Index() {
         },
     });
 
-    // 2. Define a submit handler.
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        // Do something with the form values.
-        // ✅ This will be type-safe and validated.
+    useEffect(() => {
+        async function fetchProfile() {
+            const { data, error } = await supabase.from("profiles").select();
+            if (error) {
+                console.error("Error fetching profile: ", error);
+                return;
+            }
+            console.log("Data fetched: ", data);
+            form.reset({
+                address: data[0]?.bill_address,
+                taxNumber: data[0]?.tax_number,
+                taxId: data[0]?.tax_id,
+                bankName: data[0]?.bank_name,
+                iban: data[0]?.iban,
+                bic: data[0]?.bic,
+            });
+        }
 
-        console.log(values);
+        fetchProfile();
+    }, []);
+
+    // 2. Define a submit handler.
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        const { address, taxNumber, taxId, bankName, iban, bic } = values;
+        try {
+            const { data, error } = await supabase
+                .from("profiles")
+                .upsert(
+                    {
+                        bill_address: address,
+                        tax_number: taxNumber,
+                        tax_id: taxId,
+                        bank_name: bankName,
+                        iban,
+                        bic,
+                    },
+                    { onConflict: "user_id" }
+                )
+                .select();
+
+            if (error) {
+                console.error("Error inserting data: ", error);
+                return;
+            }
+
+            console.log("Data inserted: ", data);
+            // console.log(values);
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     return (
