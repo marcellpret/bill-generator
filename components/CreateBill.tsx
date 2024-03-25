@@ -75,10 +75,6 @@ export default function CreateBill() {
 
     const supabase = createClient();
 
-    const total = entries.reduce((acc, entry) => {
-        return acc + parseFloat(entry[1]!);
-    }, 0);
-
     const addEntry = (entry: { entry: string; value: string }) => {
         setEntries([...entries, [entry.entry, entry.value]]);
     };
@@ -328,7 +324,6 @@ export default function CreateBill() {
                     <EntriesTable
                         entries={entries}
                         taxPercentage={taxPercentage}
-                        total={total}
                         deleteEntry={deleteEntry}
                     />
                 )}

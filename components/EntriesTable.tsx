@@ -1,3 +1,4 @@
+import { calculateTotal } from "@/lib/utils";
 import {
     Table,
     TableBody,
@@ -12,18 +13,19 @@ import {
 import { X } from "lucide-react";
 
 interface EntriesTableProps {
-    entries: [string, number][];
-    taxPercentage: number;
-    total: number;
+    entries: [string, string][];
+    taxPercentage: string;
+    total: {};
     deleteEntry: (entry: string) => void;
 }
 
 export default function EntriesTable({
     entries,
     taxPercentage,
-    total,
     deleteEntry,
 }: EntriesTableProps) {
+    const total = calculateTotal(entries, taxPercentage);
+
     return (
         <div className="">
             <Table>
@@ -55,10 +57,10 @@ export default function EntriesTable({
 
                     <TableRow>
                         <TableCell>
-                            {Math.floor(taxPercentage * 100)}% tax
+                            {Math.floor(Number(taxPercentage) * 100)}% tax
                         </TableCell>
                         <TableCell className="text-right">
-                            {(total * taxPercentage).toFixed(2)}$
+                            {total.tax}$
                         </TableCell>
                         <TableCell></TableCell>
                     </TableRow>
@@ -67,7 +69,7 @@ export default function EntriesTable({
                     <TableRow>
                         <TableCell>Total</TableCell>
                         <TableCell className="text-right">
-                            {(total + total * taxPercentage).toFixed(2)}$
+                            {total.netto}$
                         </TableCell>
                         <TableCell></TableCell>
                     </TableRow>
