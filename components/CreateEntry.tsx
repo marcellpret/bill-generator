@@ -12,7 +12,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Label } from "./ui/label";
-import { useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { z } from "zod";
 
 const entrySchema = z.object({
@@ -20,18 +20,22 @@ const entrySchema = z.object({
     value: z.string().min(1),
 });
 
-export default function CreateEntry({ addEntry }) {
+export default function CreateEntry({
+    addEntry,
+}: {
+    addEntry: (entry: any) => void;
+}) {
     const [entry, setEntry] = useState({ entry: "", value: "" });
     const [error, setError] = useState<string | null>(null);
 
     const refEntry = useRef(null);
 
-    const handleChange = (e) => {
+    const handleChange = (e: FormEvent<HTMLInputElement>) => {
         setError(null);
-        setEntry({ ...entry, [e.target.name]: e.target.value });
+        setEntry({ ...entry, [e.currentTarget.name]: e.currentTarget.value });
     };
 
-    const handleEntry = (e) => {
+    const handleEntry = (e: any) => {
         e.preventDefault();
 
         const parsedEntry = entrySchema.safeParse(entry);
@@ -39,7 +43,9 @@ export default function CreateEntry({ addEntry }) {
         if (parsedEntry.success) {
             addEntry(entry);
             setEntry({ entry: "", value: "" });
-            refEntry.current.focus();
+            if (refEntry.current) {
+                (refEntry.current as HTMLInputElement).focus();
+            }
             return;
         }
 

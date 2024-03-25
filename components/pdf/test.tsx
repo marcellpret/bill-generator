@@ -37,7 +37,7 @@ const { page, title, bigger_bold, row, small_italic } = StyleSheet.create({
 });
 
 // Create Document Component
-const MyDocument = ({ bill }) => {
+const MyDocument = ({ bill }: { bill: any }) => {
     return (
         <>
             <Document>
