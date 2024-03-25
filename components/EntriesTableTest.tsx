@@ -2,7 +2,6 @@ import {
     Table,
     TableBody,
     TableCaption,
-    div,
     TableFooter,
     TableHead,
     TableHeader,
