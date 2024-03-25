@@ -7,12 +7,12 @@ import { createClient } from "@/utils/supabase/client";
 
 import useLocalStorageState from "use-local-storage-state";
 
-type Entry = [string, string] | [];
-
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+import type { Entry } from "@/lib/types";
 
 import {
     Select,
@@ -96,7 +96,7 @@ export default function CreateBill() {
         },
     });
 
-    const taxPercentage = parseFloat(form.watch("taxPercentage"));
+    const taxPercentage = form.watch("taxPercentage");
 
     // useEffect(() => {
     //     if (Object.keys(formLocal).length === 0) return;

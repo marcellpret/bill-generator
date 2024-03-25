@@ -11,11 +11,11 @@ import {
 } from "./ui/table";
 
 import { X } from "lucide-react";
+import { Entry } from "@/lib/types";
 
 interface EntriesTableProps {
-    entries: [string, string][];
+    entries: Entry[];
     taxPercentage: string;
-    total: {};
     deleteEntry: (entry: string) => void;
 }
 
