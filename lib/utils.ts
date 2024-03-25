@@ -1,14 +1,13 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+type Entry = [string, string] | [];
+
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export const calculateTotal = (
-    entries: [string, string][],
-    taxPercentage: string
-) => {
+export const calculateTotal = (entries: Entry[], taxPercentage: string) => {
     const brutto = entries.reduce((acc, entry) => {
         return acc + parseFloat(entry[1]!);
     }, 0);
