@@ -78,7 +78,7 @@ export default function Index() {
             }
             console.log("Data fetched: ", data);
             form.reset({
-                address: data[0]?.bill_address,
+                address: data[0]?.address,
                 taxNumber: data[0]?.tax_number,
                 taxId: data[0]?.tax_id,
                 bankName: data[0]?.bank_name,
@@ -103,13 +103,13 @@ export default function Index() {
                 .from("profiles")
                 .upsert(
                     {
-                        bill_address: address,
-                        tax_number: taxNumber,
-                        tax_id: taxId,
-                        bank_name: bankName,
+                        address,
                         iban,
                         bic,
                         signature,
+                        tax_number: taxNumber,
+                        tax_id: taxId,
+                        bank_name: bankName,
                     },
                     { onConflict: "user_id" }
                 )
@@ -134,7 +134,7 @@ export default function Index() {
         }
 
         const saveImage = await supabase.storage
-            .from("bill-bucket")
+            .from("invoices-bucket")
             .upload(`${userId}/${image.name}`, image);
         if (saveImage.error) {
             console.error("Error uploading signature: ", saveImage.error);
@@ -142,7 +142,7 @@ export default function Index() {
         }
 
         const url = await supabase.storage
-            .from("bill-bucket")
+            .from("invoices-bucket")
             .createSignedUrl(`${userId}/${image.name}`, 3600);
 
         if (url.data) {

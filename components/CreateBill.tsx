@@ -117,10 +117,10 @@ export default function CreateBill() {
         values.entries = entries;
         try {
             const { data, error } = await supabase
-                .from("bills")
+                .from("invoices")
                 .insert({
-                    bill: values.bill,
-                    bill_number: values.billNumber,
+                    name: values.bill,
+                    number: values.billNumber,
                     issue_date: new Date(values.issueDate),
                     client_name: values.clientName,
                     client_address: values.clientAddress,
@@ -134,6 +134,8 @@ export default function CreateBill() {
                 console.error("Error inserting bill: ", error);
                 return;
             }
+
+            console.log("Bill created: ", data);
 
             setEntries([]);
             form.reset();

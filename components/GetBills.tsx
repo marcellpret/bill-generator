@@ -3,11 +3,14 @@ import Bill from "./Bill";
 
 export default async function GetBills() {
     const supabase = createClient();
-    const { data: bills } = await supabase.from("bills").select();
+    const { data: invoices } = await supabase.from("invoices").select("*");
+
+    console.log(invoices);
 
     return (
         <ol className="space-y-2">
-            {bills!.map((bill) => (
+            Teste
+            {invoices?.map((bill) => (
                 <Bill bill={bill} key={bill.serial} />
             ))}
         </ol>
